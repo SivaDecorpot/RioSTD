@@ -1,4 +1,4 @@
-require "C:/RioSTD/external_libs/sqlite3/2.2/sqlite3_native.so"
+
 
 RIO_ROOT_PATH = File.join(File.dirname(__FILE__))
 SUPPORT_PATH = File.join(File.dirname(__FILE__))
@@ -8,6 +8,9 @@ RIO_TEMP_PATH = File.join(SUPPORT_PATH, 'temp/')
 
 RIO_IMAGE_FILE_TYPE = ".jpg"
 SKP_FILE_TYPE = ".skp"
+sqlite_path 	= File.join(RIO_ROOT_PATH, 'external_libs/sqlite3/2.2/sqlite3_native.so')
+
+require sqlite_path
 
 SKETCHUP_CONSOLE.show
 #require 'rubygems'

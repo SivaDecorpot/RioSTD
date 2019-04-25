@@ -1,5 +1,4 @@
 require "csv"
-require 'C:\RioSTD\external_libs\sqlite3.rb'
 
 module Decor_Standards
 	@dbname = 'rio_std'
