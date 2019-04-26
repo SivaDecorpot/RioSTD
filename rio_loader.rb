@@ -13,7 +13,7 @@ SKETCHUP_CONSOLE.show
 #require 'rubygems'
 
 puts "Checking Gem files"
-
+puts "...."
 # begin
 	# require "mysql"
 # rescue LoadError
