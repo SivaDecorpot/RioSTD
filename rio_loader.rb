@@ -3,7 +3,7 @@ require "C:/RioSTD/external_libs/sqlite3/2.2/sqlite3_native.so"
 RIO_ROOT_PATH = File.join(File.dirname(__FILE__))
 SUPPORT_PATH = File.join(File.dirname(__FILE__))
 CONTROL_PATH = File.join(SUPPORT_PATH, 'controller')
-WEBDIALOG_PATH   = File.join(SUPPORT_PATH, 'webpages/html')
+WEBDIALOG_PATH = File.join(SUPPORT_PATH, 'webpages/html')
 RIO_TEMP_PATH = File.join(SUPPORT_PATH, 'temp/')
 
 RIO_IMAGE_FILE_TYPE = ".jpg"
@@ -13,7 +13,6 @@ SKETCHUP_CONSOLE.show
 #require 'rubygems'
 
 puts "Checking Gem files"
-puts "...."
 # begin
 	# require "mysql"
 # rescue LoadError
