@@ -4,16 +4,16 @@ module MRD
 		pts = []
 		wall_faces = []
 		all_faces = Sketchup.active_model.entities.grep(Sketchup::Face)
-
+		allowed_layers = ['Wall', 'Window', 'Door']
 
 		all_faces.each{|face|
 			wall_face_flag = true
 			face.edges.each{|edge|
-				wall_face_flag = false if edge.layer.name != 'Wall'
+				wall_face_flag = false if !allowed_layers.include?(edge.layer.name)
 			}
 			wall_faces << face if wall_face_flag
 		}
-        
+        puts "wall_faces : #{wall_faces}"
         wall_layer = Sketchup.active_model.layers['Wall']
         
         #Previous used method.............
