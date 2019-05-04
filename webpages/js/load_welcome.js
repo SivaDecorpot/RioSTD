@@ -1,6 +1,5 @@
 $(document).ready(function(){
 	window.location = 'skp:uptdetail@'+1;
-	// $('#name_title option:contains("Mr")').prop("selected",true);
 	
 	$('#startproject').on('click', function(){
 		var json = {};
@@ -11,11 +10,20 @@ $(document).ready(function(){
 				json[chkids[i]] = value
 			}else{
 				var res = chkids[i].replace(/_/g, " ");
-				var cname = res.capitalize()
-				toastr.error(cname+" can't be blank!", 'Error');
-				$('#'+chkids[i]).focus();
-				return false
+				if (res.includes('visualizer') != true){
+					var cname = res.capitalize()
+					toastr.error(cname+" can't be blank!", 'Error');
+					$('#'+chkids[i]).focus();
+					return false
+				}else{
+					json[chkids[i]] = value
+				}
 			}
+		}
+
+		if (Date.parse($('#design_start_date').val()) > Date.parse($('#design_end_date').val())){
+		  toastr.error("Invalid date range!", 'Error');
+		  return false
 		}
 
 		var str = JSON.stringify(json);
