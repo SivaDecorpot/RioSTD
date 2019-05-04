@@ -280,7 +280,7 @@ module MRP
 			if hit_item && hit_item[1][0].is_a?(Sketchup::Edge)
 				if hit_item[1][0].layer.name == 'Wall'
 					distance = start_pt.distance hit_item[0]
-					if distance < 250.mm
+					if distance < 251.mm
 						return true
 					end
 				end

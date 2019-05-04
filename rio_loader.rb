@@ -1,5 +1,3 @@
-
-
 RIO_ROOT_PATH = File.join(File.dirname(__FILE__))
 SUPPORT_PATH = File.join(File.dirname(__FILE__))
 CONTROL_PATH = File.join(SUPPORT_PATH, 'controller')
@@ -9,8 +7,10 @@ RIO_TEMP_PATH = File.join(SUPPORT_PATH, 'temp/')
 RIO_IMAGE_FILE_TYPE = ".jpg"
 SKP_FILE_TYPE = ".skp"
 sqlite_path 	= File.join(RIO_ROOT_PATH, 'external_libs/sqlite3/2.2/sqlite3_native.so')
+#sqlite_path	 	= File.join(RIO_ROOT_PATH, 'external_libs/sqlite3/database.rb')
 
 require sqlite_path
+require 'G:\git\RioSTD\external_libs\sqlite3.rb'
 
 SKETCHUP_CONSOLE.show
 #require 'rubygems'
@@ -123,17 +123,19 @@ module Decor_Standards
 					entity.set_attribute :rio_atts, 'space_name', space_name
 					puts "Rio Component Added"
 
-						dict_name='carcase_spec'
-						defn   = entity.definition.get_attribute(dict_name, 'attr_product_code')
-						entity.set_attribute(dict_name, 'attr_product_code', defn) 
+					dict_name='carcase_spec'
+					defn   = entity.definition.get_attribute(dict_name, 'attr_product_code')
+					entity.set_attribute(dict_name, 'attr_product_code', defn)
 
-						dictionaries = ['carcass_spec', 'rio_atts']
+					dictionaries = ['carcass_spec', 'rio_atts']
+					if entity.definition && entity.definition.attribute_dictionaries
 						entity.definition.attribute_dictionaries.each{|dict|
 							next if !dictionaries.include?(dict.name)
-							dict.each_pair {|key,val| 
-								entity.set_attribute dict.name, key, val 
+							dict.each_pair {|key,val|
+								entity.set_attribute dict.name, key, val
 							}
 						}
+					end
 
 					
 					#DP::update_all_room_components

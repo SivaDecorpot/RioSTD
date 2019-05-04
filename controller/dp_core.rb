@@ -1,5 +1,6 @@
 require_relative 'tt_bounds.rb'
 require_relative 'tt_core.rb'
+require 'pp'
 #-----------------------------------------------
 #
 #Decorpot Sketchup Core library
@@ -1457,7 +1458,7 @@ module DP
 		Sketchup.active_model.entities.each{|ent| post_ents << ent}
 
 		new_ent = post_ents - prev_ents
-
+ 
 		new_ent[0].transform!(trans)
 		
 		
@@ -2181,7 +2182,7 @@ module DP
 	end
 
 	def self.add_filler comp, distance, side
-		# puts "add_filler : #{side} : #{distance}"
+		puts "add_filler : #{side} : #{distance}"
 		rotz	= comp.transformation.rotz
 
         carcass_comp        = comp.definition.entities.select{|ent| ent.definition.get_attribute(:rio_atts, 'comp_type')=='carcass'}[0]
@@ -2191,6 +2192,7 @@ module DP
         when 0
             if side == 'right'
                 pts = [1,3, 7,5]
+				#distance = -distance
             elsif side == 'left'
                 pts = [0, 2, 6, 4]
                 distance = -distance
@@ -2212,17 +2214,27 @@ module DP
         when 180, -180
             if side == 'right'
                 pts = [0, 2, 6, 4]
-                distance = -distance
+                #distance = -distance
             elsif side == 'left'
                 pts = [1, 3, 7, 5]
+				distance = -distance
             end
         end
 
         new_pts = []
+		if side == 'left'
+			pts = [0, 2, 6, 4]
+		else
+			pts = [1, 3, 7,5]
+		end
         pts.each{|index|
             new_trans   = comp.transformation * Geom::Transformation.new(TT::Bounds.point(carcass_comp_bbox, index))
             new_pts     << new_trans.origin
         }
+		
+		puts "new_pts : #{rotz}"
+		pp new_pts
+		puts "--------------------"
 		prev_ents = [];Sketchup.active_model.entities.grep(Sketchup::Face).each{|ent| prev_ents<<ent}
 
 		filler_face 		= Sketchup.active_model.entities.add_face new_pts
@@ -2535,6 +2547,7 @@ module DP
 		text_component.erase!
 
 		text_inst 			= Sketchup.active_model.entities.add_instance text_definition, Geom::Transformation.new(face.bounds.center)
+		text_inst.set_attribute(:rio_atts, 'floor_text', text)
 		text_inst
 	end
 
@@ -2545,6 +2558,8 @@ module DP
 		space_names.uniq!
 		space_names
 	end
+	
+	
 
 	def self.check_comp_floor_overlap(comp, room_name)
 		

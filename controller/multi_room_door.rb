@@ -1,15 +1,17 @@
 module MRD
 	def self.get_wall_points
+		puts "get_wall_points...."
 		model 	= Sketchup.active_model
 		pts = []
 		wall_faces = []
 		all_faces = Sketchup.active_model.entities.grep(Sketchup::Face)
 
+		allowed_layers = ['Wall', 'Window', 'Door']
 
 		all_faces.each{|face|
 			wall_face_flag = true
 			face.edges.each{|edge|
-				wall_face_flag = false if edge.layer.name != 'Wall'
+				wall_face_flag = false if !allowed_layers.include?(edge.layer.name)
 			}
 			wall_faces << face if wall_face_flag
 		}
@@ -17,7 +19,7 @@ module MRD
         wall_layer = Sketchup.active_model.layers['Wall']
         
         #Previous used method.............
-        
+        puts "wall_faces : #{wall_faces}"
         
 #		wall_faces.each {|face|
 #			face.edges.each{ |edge|
@@ -65,7 +67,7 @@ module MRD
                     if hit_item[1][0].layer.name == 'Wall'
                         distance = first_vert.position.distance hit_item[0]
                         #puts distance
-                        if distance < 250.mm
+                        if distance < 251.mm
                             wall_line = Sketchup.active_model.entities.add_line first_vert.position, hit_item[0]
                             wall_line.layer = wall_layer
                         end
@@ -83,7 +85,7 @@ module MRD
                     if hit_item[1][0].layer.name == 'Wall'
                         distance = second_vert.position.distance hit_item[0]
                         #puts distance
-                        if distance < 250.mm
+                        if distance < 251.mm
                             wall_line = Sketchup.active_model.entities.add_line second_vert.position, hit_item[0]
                             wall_line.layer = wall_layer
                         end
@@ -214,7 +216,7 @@ module MRD
 			end
 		}
 		#puts "......."
-		#puts "ver : #{edge_vertices}"
+		puts "ver : #{edge_vertices}"
 		edge_vertices.each { |vert|
 			pt1 = vert[0].is_a?(Sketchup::Vertex) ? vert[0].position : vert[0]
 			pt2 = vert[1].is_a?(Sketchup::Vertex) ? vert[1].position : vert[1]
@@ -225,6 +227,7 @@ module MRD
 			Sketchup.active_model.entities.each{|ent| pre_ents<<ent}	
 			pre_ents = pre_ents - [input_face]
 			wall_line = Sketchup.active_model.entities.add_line pt1, pt2
+			intersect_ent_with_model
 			Sketchup.active_model.entities.each{|ent| post_ents<<ent}
 			
 			other_ents = post_ents - pre_ents
@@ -245,7 +248,8 @@ module MRD
 			faces.sort_by!{|f| -f.area}
 			new_face = faces[0]
 		}
-		# puts "new : #{new_face}....."
+		intersect_ent_with_model
+		puts "new : #{new_face}....."
 		new_face
 	end
 
@@ -289,14 +293,24 @@ module MRD
 				window_edges = face.edges.select{|face_edge| face_edge.layer.name=='Window'}
 				# puts window_edges.count
 				if window_edges.count > 1 && !arr.include?(face)
-					arr.push(face)
+					arr.push(face) unless face == @new_face
 					find_adj_window_face arr
 				end
 			}
 		}
 		return arr 
 	end
-    
+	
+	def self.hide_all_walls
+		wall_groups = Sketchup.active_model.entities.select{|x| !x.get_attribute(:rio_atts, 'wall_trans').nil?}
+		wall_groups.each{|wall_gp| wall_gp.hidden=true}
+	end
+	
+	def self.unhide_all_walls
+		wall_groups = Sketchup.active_model.entities.select{|x| !x.get_attribute(:rio_atts, 'wall_trans').nil?}
+		wall_groups.each{|wall_gp| wall_gp.hidden=false}
+	end
+	
     def self.check_wall_entity edge, floor_face
 
 		line_vector = edge.line[1]
@@ -308,39 +322,66 @@ module MRD
 		if res == Sketchup::Face::PointInside || res == Sketchup::Face::PointOnFace
 			perp_vector = Geom::Vector3d.new(-line_vector.y, line_vector.x, line_vector.z)
 		end
-
-
+		
 		# puts perp_vector
 		#perp_vector = line_vector
 		# puts (perp_vector.perpendicular?(line_vector))
 
 		other_faces = edge.faces - [floor_face]
+		puts "other_faces : #{other_faces}"
+		hit_item = []
 		other_faces.each {|face|
 			start_pt	= edge.bounds.center
 
 			ray = [start_pt, perp_vector]
 			hit_item = Sketchup.active_model.raytest(ray, false)
-			# puts "hit_item : #{hit_item}"
-			if hit_item && hit_item[1][0].is_a?(Sketchup::Edge)
-				if hit_item[1][0].layer.name == 'Wall'
-					distance = start_pt.distance hit_item[0]
-					# puts distance
-					if distance < 400.mm
+			puts "hit_item : #{hit_item[1][0]} : #{hit_item[1][0].layer.name}"
+			if hit_item
+				hit_entity = hit_item[1][0]
+				
+				puts "hit_entity : #{hit_entity}"
+				if hit_entity.is_a?(Sketchup::Edge)
+					if hit_entity.layer.name == 'Wall'
+						distance = start_pt.distance hit_item[0]
+						# puts distance
+						if distance < 400.mm
+							return true
+						end
+					end
+				elsif hit_entity.is_a?(Sketchup::Group)
+					puts "Group name : #{hit_entity.layer.name}"
+					if hit_entity.layer.name.start_with?('DP_Wall')
 						return true
 					end
+					return true
 				end
 			end
 		}
-
+		sel.add(hit_item[1][0])
 		return false
 	end
 	
+	def self.intersect_ent_with_model #entity
+		model 		= Sketchup.active_model
+		entities 	= model.entities
+		tr 			= Geom::Transformation.new()
 		
+		entities.intersect_with( false, tr, entities, tr, true, entities.to_a )
+	end
+	
+	def self.check_face face
+	
+	
+	end
     #face is sent to get new face if the door is added
 	def self.get_face_views input_face, inputs={}, wall_color=nil
 		return false if input_face.nil?
 		#Sketchup.active_model.start_operation '2d_to_3d'
 		# puts "MRD::get_face_views"
+		
+		
+		hide_all_walls
+		
 		model 	= Sketchup.active_model
 		wall_color = inputs['wall_color']
 		wall_height = inputs['wall_height'].to_i.mm
@@ -350,21 +391,34 @@ module MRD
 		wall_layer_name  = 'DP_Wall_'+inputs['space_name']
 		Sketchup.active_model.layers.add wall_layer_name
 		
-		view_count = 0
-		view_h = {}
 		
+		input_area = input_face.area
 		res = add_door_face input_face
         
-        # puts "input_face... : #{input_face} : #{res}"
+        puts "input_face... : #{input_face} : #{res.area} : #{input_area} : "
         door_flag = false
-        if res && res.is_a?(Sketchup::Face) && (res.area != input_face.area)
+		
+        if res && res.is_a?(Sketchup::Face) && (res.area != input_area)
             door_flag = true
-            new_face = res
+            @new_face = res
         else
-            new_face = input_face
-        end
+            @new_face = input_face
+		end
+		
+		#-CHeck this
+		@new_face.outer_loop.edges.each do |edge|
+			puts "edge layer : #{edge.layer.name}"
+			if edge.layer.name == 'Layer0'
+				edge.layer=Sketchup.active_model.layers['Wall']
+			end
+			puts "edge layer name is : #{edge.layer.name}"
+		end
+		
+		puts "door_flag  : #{door_flag}"
+		view_count = 0
+		view_h = {}
         
-		edge_array = new_face.outer_loop.edges
+		edge_array = @new_face.outer_loop.edges
 		edge_list 	= []
 		edge_array.each_index {|index|
 			curr_edge 	=  	edge_array[index]
@@ -375,7 +429,7 @@ module MRD
 			end
 			if check_perpendicular(curr_edge, next_edge)
 				face 	= find_edge_common_face(curr_edge, next_edge)
-				edge_list << face unless face.nil? #This code for raising the corner face walls
+				#edge_list << face unless face.nil? #This code for raising the corner face walls
 				edge_list << curr_edge
 				view_count += 1
 				view_name	= 'view_'+view_count.to_s
@@ -392,6 +446,7 @@ module MRD
 			end
 		}
 		
+		puts "view_h : #{view_h}"
 		view_h.each_pair{|view_name, ents|
 			pre_ents	= []
 			post_ents 	= []
@@ -403,9 +458,10 @@ module MRD
 				if ent.is_a?(Sketchup::Face)
 					faces_arr << ent #Corner face
 				elsif ent.is_a?(Sketchup::Edge)
+					puts "Ent :.... #{ent} : #{ent.layer.name}"
 					if ent.layer.name == 'Door' && door_flag
                         # puts door_flag
-						edge_face =ent.faces - [new_face]
+						edge_face =ent.faces - [@new_face]
 
 						#Check the width of the face.......sliding door it will be 100 ....normal wall
 						door_edges = edge_face[0].edges - [ent]
@@ -425,7 +481,7 @@ module MRD
 						end
 					elsif ent.layer.name == 'Window'
 						window_face 	= ent.faces
-						window_face.delete new_face
+						window_face.delete @new_face
 						window_faces = find_adj_window_face [window_face[0]]
 						ht 	= window_height+window_offset
 
@@ -444,15 +500,16 @@ module MRD
 							wface.pushpull(-window_offset)
 							top_face_window.pushpull(-(wall_height-ht))
 						}
-					elsif ent.layer.name == 'Wall'
-                        res = check_wall_entity ent, new_face
+					elsif ent.layer.name == 'Wall' || ent.layer.name == 'Layer0'
+                        res = check_wall_entity ent, @new_face
+						puts "Wall...... #{ent}: #{res}"
                         next unless res
                         # puts "Proper Wall"
                         
-						faces=ent.faces - [new_face]	
+						faces=ent.faces - [@new_face]
 						faces_arr << faces[0] #Array created because to avoid double pushpul if two edges have same face
 					end
-					trans_arr << find_transformation(ent, new_face)
+					trans_arr << find_transformation(ent, @new_face)
 				end
 			}
 			freq 		= trans_arr.inject(Hash.new(0)) { |h,v| h[v] += 1; h }
@@ -510,8 +567,9 @@ module MRD
 				
 			end
 		}
-
-		new_face
+		
+		unhide_all_walls
+		@new_face
 	end
 end
 
