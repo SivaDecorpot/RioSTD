@@ -184,7 +184,7 @@ module Decor_Standards
 			nametit = Sketchup.active_model.get_attribute(:rio_global, 'name_title')
 			cliname = Sketchup.active_model.get_attribute(:rio_global, 'client_name')
 			proname = Sketchup.active_model.get_attribute(:rio_global, 'project_name')
-			tdate = Sketchup.active_model.get_attribute(:rio_global, 'target_date')
+			tdate = Sketchup.active_model.get_attribute(:rio_global, 'design_end_date')
 			cli_name = "#{nametit}. #{cliname}"
 			jscli = "document.getElementById('cliname').innerHTML='#{cli_name}'"
 			$rio_dialog.execute_script(jscli)
@@ -227,7 +227,7 @@ module Decor_Standards
 			nametit = Sketchup.active_model.get_attribute(:rio_global, 'name_title')
 			cliname = Sketchup.active_model.get_attribute(:rio_global, 'client_name')
 			proname = Sketchup.active_model.get_attribute(:rio_global, 'project_name')
-			tdate = Sketchup.active_model.get_attribute(:rio_global, 'target_date')
+			tdate = Sketchup.active_model.get_attribute(:rio_global, 'design_end_date')
 			cli_name = "#{nametit}. #{cliname}"
 
 			jscli = "document.getElementById('cliname').innerHTML='#{cli_name}'"
@@ -575,7 +575,7 @@ module Decor_Standards
 		$rio_dialog.add_action_callback("select-carcass"){|a, b|
 			@spval = b.split(",")
 			@title = "RioSTD | Select Carcass"
-			cardialog = UI::HtmlDialog.new({:dialog_title=>@title, :preferences_key=>"com.sample.plugin", :scrollable=>false, :resizable=>false, :style=>UI::HtmlDialog::STYLE_DIALOG})
+			cardialog = UI::HtmlDialog.new({:dialog_title=>@title, :preferences_key=>"com.sample.plugin", :scrollable=>false, :resizable=>true, :style=>UI::HtmlDialog::STYLE_DIALOG})
 			html_path = File.join(WEBDIALOG_PATH, 'load_carcass.html')
 			cardialog.set_file(html_path)
 			cardialog.set_position(20, 150)
@@ -883,6 +883,20 @@ module Decor_Standards
 			inputs = UI.inputbox(prompts,defaults, list, "Select Space Name")
 			if !inputs[0].nil?
 				scan_room = scan_room_components inputs[0], true
+			end
+		}
+
+		$rio_dialog.add_action_callback('edit_room'){|dlg, param|
+			prompts = ["Room Name"]
+			list = [DP::get_space_names.join('|')]
+			defaults = [DP::get_space_names.first]
+			if DP::get_space_names.length.to_i !=0
+				inputs = UI.inputbox(prompts,defaults, list, "Select Room Name")
+				if !inputs[0].nil?
+					edit_room = DP::edit_room inputs[0]
+				end
+			else
+				UI::messagebox 'Not found rooms!', MB_OK
 			end
 		}
 
