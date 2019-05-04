@@ -131,7 +131,7 @@ module Decor_Standards
 		  	mainarr.push("right_lam_value|"+right_lam)
 		  end
 
-		  if top_laminate == 1
+		  if top_laminate == 1 && !@selection.definition.get_attribute(:rio_atts, 'main-category').include?('Base')
 		  	if lam_top.length != 0
 		  		if lam_top.include?('#') == true
 		  			top_lam = lam_top
@@ -192,7 +192,7 @@ module Decor_Standards
 	end
 
 	def self.uptdetail()
-		keyarr = ['client_name', 'client_id', 'apartment_name', 'flat_number', 'project_name', 'designer_name', 'visualizer_name', 'contract_date', 'target_date', 'name_title']
+		keyarr = ['client_name', 'client_id', 'apartment_name', 'flat_number', 'project_name', 'designer_name', 'visualizer_name', 'design_start_date', 'design_end_date', 'name_title']
 		newarr = []
 		for k in keyarr
 			val = Sketchup.active_model.get_attribute(:rio_global, k)
