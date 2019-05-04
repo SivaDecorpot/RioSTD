@@ -288,13 +288,17 @@ module WD
             trans_hash[:set_x] ? pt.x=WALL_OUTLINE_OFFSET : pt.y=WALL_OUTLINE_OFFSET
             comp_pts << pt
         end
-        Sketchup.active_model.entities.add_face(comp_pts)
-    
+        comp_face = Sketchup.active_model.entities.add_face(comp_pts)
+        face_bbox = comp_face.bounds.center
+        point   = Geom::Point3d.new face_bbox
         #Add component dimension
         if dimension_flag
             add_rio_dimension(comp_pts[0], comp_pts[1], Z_AXIS, 'red')
             add_rio_dimension(comp_pts[2], comp_pts[1], trans_hash[:front_dim_vector].reverse, 'red')
         end
+        comp_name = view_comp.get_attribute(:rio_atts, 'wd_name')
+        text = Sketchup.active_model.entities.add_text comp_name, point
+        text.material.color = 'Indigo'
     end
     
     def add_shutter_outline view_comp, dimension_flag=true
@@ -361,8 +365,6 @@ module WD
                 }[0]
                 comp_origin = comp.transformation.origin
                 comp_bound = comp.bounds
-                puts "comp_origin---- #{comp.transformation.rotz.to_i}"
-                # gbound = cmp_car.bounds
                 cmp_count = cmp_car.definition.entities.count
                 cmp_car.definition.entities.each{|s| 
                     if s.layer.name.split('_IM_').last.include?('DOOR_NORM')
@@ -371,10 +373,11 @@ module WD
                             if comp.transformation.rotz.to_i != -180
                                 index == 7 ? cb = comp_bound.height : cb = 0 if opening_side.to_s == 'LHS'
                                 index != 6 ? cb = comp_bound.height : cb = 0 if opening_side.to_s == 'RHS'
+                            elsif comp.transformation.rotz.to_i == -180 || comp.transformation.rotz.to_i == 180
+                                index == 7 ? cb = comp_bound.height : cb = 0 if opening_side.to_s == 'LHS'
+                                index != 6 ? cb = comp_bound.height : cb = 0 if opening_side.to_s == 'RHS'
                             else
                                 cb = comp_bound.height
-                                # index != 7 ? cb = comp_bound.height : cb = 0 if opening_side.to_s == 'LHS'
-                                # index != 6 ? cb = comp_bound.height : cb = 0 if opening_side.to_s == 'RHS'
                             end
                             pt = TT::Bounds.point(gbound, front_bounds[index])
                             trans_hash[:set_x] ? pt.x=WALL_OUTLINE_OFFSET : pt.y=WALL_OUTLINE_OFFSET
@@ -382,32 +385,37 @@ module WD
                             if comp.transformation.rotz.to_i == 90
                                 trans_hash[:set_x] ? pt.y += (comp_origin.y + cb) : pt.x += comp_origin.x
                             else
-                                if comp.transformation.rotz.to_i == -180
-                                    puts "cb---------: #{cb}"
+                                if comp.transformation.rotz.to_i == -180 || comp.transformation.rotz.to_i == 180
                                     trans_hash[:set_x] ? pt.y += (comp_origin.y - cb) : pt.x += (comp_origin.x - cb)
+                                    pt.x += cb if index == 6
+                                    pt.x -= cb if index == 7
                                 else
                                     trans_hash[:set_x] ? pt.y += (comp_origin.y - cb) : pt.x += comp_origin.x
                                 end
                             end
-
-                            # pt.x += comp_origin.x
-                            # pt.y += comp_origin.y
-                            # pt.z += comp_origin.z
+                            pt.z += 4 if comp.get_attribute(:rio_atts, 'door-type').to_s == 'Single/Drawer' && !comp.get_attribute(:rio_atts, 'sub-category').include?('Microwave')
                             pts << pt
                         end
-                        puts "pts---#{pts[0]} : #{pts[1]} : #{pts[2]}"
                         Sketchup.active_model.entities.add_cline pts[0] , pts[1]
                         Sketchup.active_model.entities.add_cline pts[2] , pts[1]
                         pts = [] if cmp_count.to_i >= 1
                     end
                 }
             else
+                if comp.transformation.rotz.to_i == -180 || comp.transformation.rotz.to_i == 90
+                    if opening_side == 'LHS'
+                        index_arr = [2, 6, 1]
+                    elsif opening_side == 'RHS'
+                        index_arr = [3, 7, 0]
+                    end
+                end
+
+                puts "index-arr------#{index_arr}"
                 index_arr.each do |index|
                     pt = TT::Bounds.point(comp_bbox, front_bounds[index])
                     trans_hash[:set_x] ? pt.x=WALL_OUTLINE_OFFSET : pt.y=WALL_OUTLINE_OFFSET
                     pts << pt
                 end
-                puts "pts---#{pts[0]} : #{pts[1]} : #{pts[2]}"
                 Sketchup.active_model.entities.add_cline pts[0] , pts[1]
                 Sketchup.active_model.entities.add_cline pts[2] , pts[1]
             end
